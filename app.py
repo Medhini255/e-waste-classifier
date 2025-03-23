@@ -1,46 +1,45 @@
-# 
 import streamlit as st
+import tensorflow as tf
 import numpy as np
-import tensorflow.lite as tflite
 from PIL import Image
+import io
 
-# Load TFLite model
-interpreter = tflite.Interpreter(model_path="model.tflite")
+# Load model
+interpreter = tf.lite.Interpreter(model_path="model.tflite")
 interpreter.allocate_tensors()
 
-# Get input and output details
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
-# Define class labels
-class_labels = ["Keyboard", "Laptop_mobile", "Laptop_mouse" ,"Mobile", "Monitor","Mouse"]
+# Function to classify image
+def classify_image(image):
+    image = image.resize((224, 224))
+    image = np.array(image) / 255.0
+    image = np.expand_dims(image, axis=0).astype(np.float32)
+    
+    interpreter.set_tensor(input_details[0]['index'], image)
+    interpreter.invoke()
+    output_data = interpreter.get_tensor(output_details[0]['index'])
+    
+    prediction = np.argmax(output_data)
+    labels = ["Keyboard", "Laptop_mobile", "Laptop_mouse", "Mobile", "Monitor", "Mouse"]
+    return labels[prediction]
 
-# Streamlit UI
-st.title("E-Waste Scanner")
-st.write("Upload an image to classify if it's an e-waste item.")
+st.title("E-Waste Image Classifier")
 
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"])
+# File upload section
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"])
 
-if uploaded_file is not None:
+if uploaded_file:
     image = Image.open(uploaded_file)
     st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    # Preprocess the image
-    image = image.resize((224, 224))  # Adjust based on model input size
-    image = np.array(image, dtype=np.float32) / 255.0  # Normalize
-    image = np.expand_dims(image, axis=0)  # Add batch dimension
+    prediction = classify_image(image)
+    st.write(f"Prediction: **{prediction}**")
 
-    # Set input tensor
-    interpreter.set_tensor(input_details[0]['index'], image)
-
-    # Run inference
-    interpreter.invoke()
-
-    # Get output tensor
-    predictions = interpreter.get_tensor(output_details[0]['index'])[0]
-
-    # Get predicted class
-    predicted_class = np.argmax(predictions)
-
-    # Display result
-    st.write(f"### Prediction: **{class_labels[predicted_class]}**")
+# API Endpoint
+if "file" in st.query_params:
+    file = st.query_params["file"]
+    image = Image.open(io.BytesIO(file))
+    prediction = classify_image(image)
+    st.json({"prediction": prediction})
