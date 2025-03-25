@@ -1,4 +1,6 @@
-streamlit
-numpy
-Pillow
-tensorflow
+flask
+google-generativeai
+requests
+gunicorn
+
+
