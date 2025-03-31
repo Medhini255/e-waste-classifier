@@ -74,7 +74,7 @@ def classify_image(image):
     output_data = interpreter.get_tensor(output_details[0]['index'])
     
     prediction = np.argmax(output_data)
-    labels = ["Keyboard", "Laptop_mobile", "Laptop_mouse", "Mobile", "Monitor", "Mouse"]
+    labels = ["Keyboard", "Laptop_mobile", "Laptop_mouse/Laptop", "Mobile", "Monitor", "Mouse"]
     return labels[prediction]
 
 # *1️⃣ Standard Streamlit UI for File Upload*
